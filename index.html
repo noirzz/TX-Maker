@@ -1,0 +1,77 @@
+<html>
+    <style>
+        input,textarea{
+            width: 400px;
+            padding: 10px 15px;
+            font-size: 16px;
+            border-radius: 3px;
+            border: 2px solid #ddd;
+            box-sizing: border-box; 
+        }
+        label {
+            width:150px;
+            display: block;
+            float: left;
+        }
+        button{
+            border:solid 1px #ccc;
+            padding:15px 30px;
+            margin:0 0 20px;
+            font-family:Arial, sans-serif;
+            font-size:1.2em;
+            text-transform:uppercase;
+            font-weight:bold;
+            color:#333;
+            width:550px;
+            cursor:pointer;
+        }
+    </style>
+    <h3>Account: <span class="showAccount"></span></h3>
+    <label>to(address)</label><input type="text" id="to" value="0xBd63D93873CAf25253724F64959c19c0fF0F49aD"><br>
+    <label>value(ETH)</label><input type="text" id="value" value="0"><br>
+    <label>gas</label><input type="text" id="gas" value="300000"><br>
+    <label>gasPrice(gwei)</label><input type="text" id="gasPrice" value="100"><br>
+    <label>data</label><textarea type="text" id="data" value=""></textarea><br><br>
+    <button class="sendTransaction">Send TX</button>
+    <script>
+        const sendTransaction = document.querySelector('.sendTransaction');
+        let account = "";
+
+        async function main(){
+            if (typeof window.ethereum !== 'undefined') {
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                account = accounts[0];
+                document.querySelector('.showAccount').innerHTML = account;
+            }else{
+                alert("metamask connect error");
+            }
+        }
+
+            ethereum.on('accountsChanged', function (accounts) {
+                console.log('change account', accounts);
+                account = accounts[0];
+                document.querySelector('.showAccount').innerHTML = account;
+            });
+
+            //Sending Ethereum to an address
+            sendTransaction.addEventListener('click', () => {
+                ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [
+                        {
+                            from: account,
+                            to: document.getElementById("to").value,
+                            value: (Number(document.getElementById("value").value) * 10 ** 18).toString(16),
+                            gas: Number(document.getElementById("gas").value).toString(16),
+                            gasPrice: (Number(document.getElementById("gasPrice").value) * 10 ** 9).toString(16),
+                            data: document.getElementById("data").value
+                        },
+                    ],
+                })
+                .then((txHash) => console.log(txHash))
+                .catch((error) => console.error);
+            });
+
+        main();
+    </script>
+</html>
