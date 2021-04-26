@@ -1,0 +1,83 @@
+<html>
+    <style>
+        input,textarea{
+            width: 400px;
+            padding: 10px 15px;
+            font-size: 16px;
+            border-radius: 3px;
+            border: 2px solid #ddd;
+            box-sizing: border-box; 
+            margin-top:5px;
+        }
+        label {
+            width:150px;
+            display: block;
+            float: left;
+            margin-top:5px;
+        }
+        button{
+            border:solid 1px #ccc;
+            padding:15px 30px;
+            margin:0 0 20px;
+            font-family:Arial, sans-serif;
+            font-size:1.2em;
+            text-transform:uppercase;
+            font-weight:bold;
+            color:#333;
+            width:550px;
+            cursor:pointer;
+            margin-top:5px;
+        }
+    </style>
+    <h2>Approve TX Maker</h2>
+    <p>使い方<br>
+        ERC-20 AddressにApproveしたいTokenのアドレス e.g.DAI（0x6B175474E89094C44Da98b954EedeAC495271d0F）<br>
+        SpenderにTokenの利用を承認するアドレス e.g.UniswapRouter（0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D）
+    </p>
+    <hr>
+    <h3>Account: <span class="showAccount"></span></h3>
+    <label>ERC-20 Address</label><input type="text" id="to" value=""><br>
+    <label>Spender</label><input type="text" id="spender" value=""><br>
+    <button class="sendTransaction">Send TX</button>
+    <script>
+        const sendTransaction = document.querySelector('.sendTransaction');
+        let account = "";
+
+        async function main(){
+            if (typeof window.ethereum !== 'undefined') {
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                account = accounts[0];
+                document.querySelector('.showAccount').innerHTML = account;
+            }else{
+                alert("metamask connect error");
+            }
+        }
+
+            ethereum.on('accountsChanged', function (accounts) {
+                console.log('change account', accounts);
+                account = accounts[0];
+                document.querySelector('.showAccount').innerHTML = account;
+            });
+
+            //Sending Ethereum to an address
+            sendTransaction.addEventListener('click', () => {
+                let spender = document.getElementById("spender").value;
+                let data = "0x095ea7b3000000000000000000000000" + spender.slice(2) + "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+                ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [
+                        {
+                            from: account,
+                            to: document.getElementById("to").value,
+                            value: "0",
+                            data: data
+                        },
+                    ],
+                })
+                .then((txHash) => console.log(txHash))
+                .catch((error) => console.error);
+            });
+
+        main();
+    </script>
+</html>
