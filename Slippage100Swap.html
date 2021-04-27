@@ -1,0 +1,137 @@
+<html>
+    <style>
+        input,textarea{
+            width: 400px;
+            padding: 10px 15px;
+            font-size: 16px;
+            border-radius: 3px;
+            border: 2px solid #ddd;
+            box-sizing: border-box; 
+            margin-top:5px;
+        }
+        .radio{
+            width: 20px;
+        }
+        label {
+            width:150px;
+            display: block;
+            float: left;
+            margin-top:5px;
+        }
+        .sendTransaction{
+            border:solid 1px #ccc;
+            padding:15px 30px;
+            margin:0 0 20px;
+            font-family:Arial, sans-serif;
+            font-size:1.2em;
+            text-transform:uppercase;
+            font-weight:bold;
+            color:#333;
+            width:550px;
+            cursor:pointer;
+            margin-top:5px;
+        }
+    </style>
+    <h2>Slippage 100% Swap TX Maker</h2>
+    <p>
+        ETH/BNB -> Token のswap (ETH->Token-A->Token-Bのようなswapは不可)<br>
+        Ethereumの場合gasとgasPriceは入れなければMetamaskがよしなにしてくれます（送信時点で実行可能なTXであれば）
+    </p>
+    <hr>
+    <h2 class="showNetwork"></h2>
+    <h3>Account: <span class="showAccount"></span></h3>
+    <label>Token Address</label><input type="text" id="token" value=""><br>
+    <label>value(ETH/BNB)</label><input type="text" id="value" value="0"><br>
+    <hr>
+    <label>gas</label><input type="text" id="gas" value=""><br>
+    <label>gasPrice(gwei)</label><input type="text" id="gasPrice" value=""><br>
+    <button class="sendTransaction">Send TX</button>
+    <div id="message"></div>
+    <script>
+        const sendTransaction = document.querySelector('.sendTransaction');
+        let account = "";
+        let chainId;
+
+        async function main(){
+            if (typeof window.ethereum !== 'undefined') {
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                account = accounts[0];
+                document.querySelector('.showAccount').innerHTML = account;
+            }else{
+                alert("metamask connect error");
+            }
+        }
+
+        ethereum.on('accountsChanged', function (accounts) {
+            console.log('change account', accounts);
+            account = accounts[0];
+            document.querySelector('.showAccount').innerHTML = account;
+        });
+
+        ethereum.on('connect', (info) => {
+            chainId = Number(info.chainId);
+            if(chainId==1){
+                document.querySelector('.showNetwork').innerHTML = "Swap ETH -> Token on Uniswap on Ethereum";
+            }else if (chainId == 56){
+                document.querySelector('.showNetwork').innerHTML = "Swap BNB->Token on Pancake on BSC";
+            }
+        });
+
+        ethereum.on('chainChanged', (chainId) => {
+            window.location.reload();
+        });
+
+        sendTransaction.addEventListener('click', () => {
+            let toAddress;
+            let path = [];
+
+            if(chainId == 1) {
+                toAddress = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
+                path.push("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
+            }else{
+                toAddress = "0x10ED43C718714eb63d5aA57B78B54704E256024E";
+                path.push("0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c");
+            }
+
+            path.push(document.getElementById("token").value);
+
+            let deadline = ("0000000000000000000000000000000000000000000000000000000000000000" + Math.ceil((new Date()).getTime() / 1000 + 300).toString(16)).slice(-64);
+            let pathLength = ("0000000000000000000000000000000000000000000000000000000000000000" + path.length.toString(16)).slice(-64);
+            let data = "0x7ff36ab500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000" + account.slice(2) + deadline + pathLength;
+            for(let token of path){
+                data += "000000000000000000000000" + token.slice(2);
+            }
+            console.log(data);
+
+            let tx = {
+                from: account,
+                to: toAddress,
+                value: (Number(document.getElementById("value").value) * 10 ** 18).toString(16),
+                data: data
+            }
+
+            if(document.getElementById("gas").value !== ""){
+                tx.gas = Number(document.getElementById("gas").value).toString(16);
+            }
+            if(document.getElementById("gasPrice").value !== ""){
+                tx.gasPrice = (Number(document.getElementById("gasPrice").value) * 10 ** 9).toString(16);
+            }
+            ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [tx],
+            })
+            .then((txHash) => {
+                let ele = document.createElement('p');
+                ele.textContent = "txhash: " + txHash;
+                document.getElementById('message').appendChild(ele);
+            })
+            .catch((error) => {
+                let ele = document.createElement('p');
+                ele.textContent = error.message;
+                document.getElementById('message').appendChild(ele);
+            });
+        });
+
+        main();
+    </script>
+</html>
